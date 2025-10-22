@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>¡Feliz Cumpleaños! 💖</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --color-primary: #ff6f61;
+        --color-secondary: #ffadad;
+        --color-background-start: #f8c0c0;
+        --color-background-end: #ffe2e2;
+        --color-text-dark: #333;
+        --color-text-light: #fff;
+        --shadow-light: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: "Poppins", sans-serif;
+        overflow: hidden;
+      }
+
+      /* Fondo degradado + canvas */
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #ffe2e2, #f8c0c0, #a1c4fd, #c2e9fb);
+        background-size: 300% 300%;
+        animation: gradientShift 12s ease infinite;
+        z-index: 0;
+      }
+
+      @keyframes gradientShift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1; /* encima del degradado, debajo de la carta */
+        pointer-events: none;
+      }
+
+      .envelope-container {
+        position: relative;
+        perspective: 1000px;
+        cursor: pointer;
+        width: 320px;
+        height: 220px;
+        z-index: 5; /* carta siempre encima */
+      }
+
+      .envelope {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+
+      .flap,
+      .body,
+      .letter {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-radius: 10px;
+        box-shadow: var(--shadow-light);
+      }
+
+      .body {
+        background-color: var(--color-primary);
+        z-index: 1;
+      }
+
+      .flap {
+        background-color: red;
+        transform-origin: top;
+        transition: transform 1s ease-in-out;
+        z-index: 2;
+        clip-path: polygon(0 0, 100% 0, 50% 50%);
+      }
+
+      .flap.open {
+        transform: rotateX(180deg) translateY(-2px);
+      }
+
+      .letter {
+        background-color: var(--color-text-light);
+        padding: 20px;
+        box-sizing: border-box;
+        transform: translateY(100%);
+        transition: transform 1.2s ease-in-out, opacity 0.8s ease-in-out;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        border: 2px solid var(--color-primary);
+        border-radius: 8px;
+        opacity: 0;
+        height: auto;
+      }
+
+      .letter.show {
+        transform: translateY(-140px) scale(1.02);
+        opacity: 1;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(-140px) scale(1.02);
+        }
+        50% {
+          transform: translateY(-150px) scale(1.02);
+        }
+      }
+
+      .letter-content h2 {
+        font-family: "Pacifico", cursive;
+        color: var(--color-primary);
+        font-size: 2.3rem;
+        margin-top: 0;
+        margin-bottom: 10px;
+      }
+
+      .letter-content p {
+        color: var(--color-text-dark);
+        line-height: 1.6;
+        margin: 8px 0;
+        opacity: 0;
+        transform: translateY(15px);
+        transition: all 0.8s ease;
+      }
+
+      .letter-content p.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Confeti */
+      .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: red;
+        top: 0;
+        left: 50%;
+        opacity: 0.8;
+        animation: fall 3s linear forwards;
+      }
+
+      @keyframes fall {
+        to {
+          transform: translateY(100vh) rotate(360deg);
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Fondo animado -->
+    <canvas id="canvas"></canvas>
+
+    <!-- Carta -->
+    <div class="envelope-container" id="envelopeContainer">
+      <div class="envelope">
+        <div class="flap" id="flap"></div>
+        <div class="body"></div>
+        <div class="letter" id="letter">
+          <div class="letter-content">
+            <h2>¡Feliz Cumpleaños!</h2>
+            <p id="p1">"TATITE"</p>
+            <p id="p2">
+              Feliz Cumple atrasado Manca jajaja no soy bueno para estas vainas pero ... 
+            </p>
+            <p id="p3">
+              Espero que ese día la hayas pasado bien.
+            </p>
+            <p id="p4">De parte de,</p>
+            <p id="p5">Jeremy</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* Fondo tipo Matrix con emojis */
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const chars = "✨".split("");
+      const fontSize = 22;
+      const columns = Math.floor(canvas.width / fontSize);
+      const drops = new Array(columns).fill(1);
+
+      /* Partículas al hacer click */
+      let particles = [];
+
+      document.addEventListener("click", (e) => {
+        for (let i = 0; i < 6; i++) {
+          particles.push({
+            x: e.clientX,
+            y: e.clientY,
+            vx: (Math.random() - 0.5) * 4,
+            vy: (Math.random() - 0.5) * 4,
+            alpha: 1,
+            size: fontSize + Math.random() * 8,
+          });
+        }
+      });
+
+      function drawMatrix() {
+        // Fondo semi-transparente sobre degradado
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#ff69b4";
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+          const text = chars[Math.floor(Math.random() * chars.length)];
+          const x = i * fontSize;
+          const y = drops[i] * fontSize;
+          ctx.fillText(text, x, y);
+
+          if (y > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+          drops[i]++;
+        }
+      }
+      function drawParticles() {
+        particles.forEach((p, index) => {
+          ctx.globalAlpha = p.alpha;
+          ctx.font = p.size + "px monospace";
+          ctx.fillStyle = "#DAA520"; // dorado
+          ctx.fillText("Feliz Cumple", p.x, p.y);
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= 0.01;
+          if (p.alpha <= 0) {
+            particles.splice(index, 1);
+          }
+        });
+        ctx.globalAlpha = 1;
+      }
+
+      function animate() {
+        drawMatrix();
+        drawParticles();
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+
+      window.addEventListener("resize", () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+
+      /* Animación de carta */
+      const flap = document.getElementById("flap");
+      const letter = document.getElementById("letter");
+      const envelopeContainer = document.getElementById("envelopeContainer");
+      const paragraphs = document.querySelectorAll(".letter-content p");
+      let opened = false;
+
+      envelopeContainer.addEventListener("click", () => {
+        if (opened) return;
+        opened = true;
+
+        flap.classList.add("open");
+
+        setTimeout(() => {
+          flap.style.zIndex = "0";
+          letter.classList.add("show");
+
+          paragraphs.forEach((p, i) => {
+            setTimeout(() => p.classList.add("show"), i * 500);
+          });
+
+          launchConfetti();
+        }, 1000);
+      });
+
+      function launchConfetti() {
+        for (let i = 0; i < 400; i++) {
+          const confetti = document.createElement("div");
+          confetti.classList.add("confetti");
+          confetti.style.left = Math.random() * 100 + "vw";
+          confetti.style.backgroundColor = getRandomColor();
+          confetti.style.animationDuration = 2 + Math.random() * 3 + "s";
+          document.body.appendChild(confetti);
+          setTimeout(() => confetti.remove(), 4000);
+        }
+      }
+
+      function getRandomColor() {
+        const colors = [
+          "#ff6f61",
+          "#ffadad",
+          "#a1c4fd",
+          "#c2e9fb",
+          "#fdd365",
+          "#9be7ff",
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+    </script>
+  </body>
+</html>
